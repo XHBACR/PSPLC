@@ -22,7 +22,7 @@ class Personal_Geo_GCN(nn.Module):
         for _ in range(geoGCN_num): # 2
             self.geo_convs.append(GCNConv(poi_dim,poi_dim)) #(64,64)
 
-    def forward(self, poi_embeddings, distance_matrix, seqInDay ,GCN_layer_num,sampleIdOfDay_set): #[1431, 64], [1430, 1430], [80, 15], 2 
+    def forward(self, poi_embeddings, distance_matrix, seqInDay ,GCN_layer_num,sampleIdOfDay_set): 
         poi_emb=poi_embeddings.weight[1:,:] #[1430, 64]
         
         # Pair sampleIdOfDay_set with seqInDay
@@ -59,29 +59,29 @@ class Personal_Geo_GCN(nn.Module):
             weight_matrix = torch.zeros_like(distance_matrix)
 
             for id,i in enumerate(torch.unique(span_intervals)):
-                mask = (distance_matrix >= intervals[i-1]) & (distance_matrix < intervals[i]) #在该距离跨度内的poi对
+                mask = (distance_matrix >= intervals[i-1]) & (distance_matrix < intervals[i])
                 weight_matrix[mask] = weights[i]
-            weight_matrix.fill_diagonal_(1) #对角线为1
+            weight_matrix.fill_diagonal_(1) 
 
             #GCN前进行规范化,(归一化)
-            adj_dig = torch.clamp(torch.pow(torch.sum(weight_matrix, dim=-1, keepdim=True),0.5), min=1e-12) #[1430, 1]
-            update_adj = weight_matrix/adj_dig/adj_dig.transpose(-1,-2)#[1430,1430]
+            adj_dig = torch.clamp(torch.pow(torch.sum(weight_matrix, dim=-1, keepdim=True),0.5), min=1e-12) 
+            update_adj = weight_matrix/adj_dig/adj_dig.transpose(-1,-2)
             update_adj=update_adj.to(self.device)
 
             #进行GCN
             x_fin = [poi_emb]
             layer = poi_emb
-            for f in range(GCN_layer_num): #公式6  每天的seq的embedding 用"seq距离跨度的权重矩阵"进行更新
-                layer = torch.matmul(update_adj,layer) #[1430, 64]
-                layer = torch.tanh(layer) #[1430, 64]
-                x_fin += [layer] #[3,[1430, 64]] [raw,l1,l2]
-            x_fin = torch.stack(x_fin,dim=1) #[1430, 3, 64]
-            out = torch.sum(x_fin,dim=1) #[1430, 64] GCN完毕的全部poi_embedding
-            GCN_poi_emb = torch.cat([poi_embeddings.weight[0, :].unsqueeze(dim=0),out], dim=0) #[1431, 64] 把去掉的第一行 又放回来了
+            for f in range(GCN_layer_num): 
+                layer = torch.matmul(update_adj,layer) 
+                layer = torch.tanh(layer) 
+                x_fin += [layer] 
+            x_fin = torch.stack(x_fin,dim=1) 
+            out = torch.sum(x_fin,dim=1) 
+            GCN_poi_emb = torch.cat([poi_embeddings.weight[0, :].unsqueeze(dim=0),out], dim=0) 
             # sample=sample.to('cpu')
 
-            sample_emb = GCN_poi_emb[sample,:] #[15, 64]<-[15,]
-            sample_emb *= sample_emb.shape[1] ** 0.5 #  *8   #[15, 64]
+            sample_emb = GCN_poi_emb[sample,:] 
+            sample_emb *= sample_emb.shape[1] ** 0.5 
 
             seq_GCN_embeddings.append(sample_emb) 
 
@@ -95,20 +95,20 @@ class Personal_Geo_GCN(nn.Module):
 class Embedding_Layer(nn.Module):
     def __init__(self, args):
         super(Embedding_Layer, self).__init__()
-        # self.poi_embedding = poi_embedding #[1431,64]
-        self.hour_embedding = nn.Embedding(args.hour_num+1, args.hour_dim, padding_idx=0) #[25,32]
-        self.isweekend_embedding = nn.Embedding(args.isweekend_num+1, args.isweekend_dim, padding_idx=0)#[3,32]
-        self.user_embedding = nn.Embedding(args.user_num+1, args.user_dim, padding_idx=0)#[169,32]
+
+        self.hour_embedding = nn.Embedding(args.hour_num+1, args.hour_dim, padding_idx=0) 
+        self.isweekend_embedding = nn.Embedding(args.isweekend_num+1, args.isweekend_dim, padding_idx=0)
+        self.user_embedding = nn.Embedding(args.user_num+1, args.user_dim, padding_idx=0)
         self.dropout = nn.Dropout(args.dropout_rate)
 
     def forward(self, seq_poi_embeddings, hour_set,isweekend_set,user_set):
-        poi_embeddings = seq_poi_embeddings #[157,15,64]
-        hour_embeddings = self.hour_embedding(hour_set) #[157,15,32]
-        isweenkend_embeddings = self.isweekend_embedding(isweekend_set) #[157,15,32]
-        user_embeddings = self.user_embedding(user_set) #[157,15,32]
-        seq_embeddings=torch.cat((poi_embeddings,hour_embeddings,isweenkend_embeddings,user_embeddings),dim=2) #[157,15,128]
+        poi_embeddings = seq_poi_embeddings
+        hour_embeddings = self.hour_embedding(hour_set) 
+        isweenkend_embeddings = self.isweekend_embedding(isweekend_set) 
+        user_embeddings = self.user_embedding(user_set) 
+        seq_embeddings=torch.cat((poi_embeddings,hour_embeddings,isweenkend_embeddings,user_embeddings),dim=2)
 
-        return seq_embeddings #[157,15,128]
+        return seq_embeddings 
 
 
 class Distance_Time_Span_Embedding_Layer(nn.Module):
@@ -119,8 +119,8 @@ class Distance_Time_Span_Embedding_Layer(nn.Module):
         self.dis_dropout = nn.Dropout(args.dropout_rate)
         self.time_dropout = nn.Dropout(args.dropout_rate)
 
-    def forward(self, distance_span_set, time_span_set): #[80, 15] , [80, 15]
-        distance_span_embedding = self.distance_embedding(distance_span_set) #[80, 15, 128]
+    def forward(self, distance_span_set, time_span_set):
+        distance_span_embedding = self.distance_embedding(distance_span_set)
         time_span_embedding = self.time_embedding(time_span_set)
         distance_span_embedding = self.dis_dropout(distance_span_embedding)
         time_span_embedding = self.time_dropout(time_span_embedding)
@@ -147,12 +147,12 @@ class SelfAttention_Layer(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, seq_embeddings, mask): #[80, 15, 128], [80, 15]
+    def forward(self, seq_embeddings, mask): 
         Q = self.query(seq_embeddings)
         K = self.key(seq_embeddings)
         V = self.value(seq_embeddings)
 
-        scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(Q.size(-1)) #[80, 15, 15]
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(Q.size(-1)) 
         scores = scores.masked_fill(mask.unsqueeze(1) == 0, -1e9)
         weights = F.softmax(scores, dim=-1)
 
@@ -184,12 +184,12 @@ class SpanLSTMCell(nn.Module):
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
 
-    def forward(self, seq_emb, dist_emb, time_emb, hx=None): #[80, 128],[80, 128],[80, 128]
+    def forward(self, seq_emb, dist_emb, time_emb, hx=None):
         if hx == (None,None):
             hx = seq_emb.new_zeros(seq_emb.size(0), self.hidden_dim), \
                  seq_emb.new_zeros(seq_emb.size(0), self.hidden_dim)
 
-        h, c = hx  #[80, 128], [80, 128]
+        h, c = hx 
 
         # [80, 512]
         gates = (F.linear(seq_emb, self.weight_ih, self.bias) +
@@ -207,14 +207,13 @@ class SpanLSTMCell(nn.Module):
         c_next = (forget_gate * c) + (input_gate * cell_gate)
         h_next = output_gate * torch.tanh(c_next)
 
-        return h_next, c_next #[80, 128], [80, 128]
-
+        return h_next, c_next 
 class Span_LSTM_Layer(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super(Span_LSTM_Layer, self).__init__()
         self.lstm_cell = SpanLSTMCell(input_dim, hidden_dim)
 
-    def forward(self, seq_emb, dist_emb, time_emb, mask): #[80, 15, 128], [80, 15, 128], [80, 15, 128], [80, 15]
+    def forward(self, seq_emb, dist_emb, time_emb, mask):
         batch_size, seq_length, _ = seq_emb.size()
         h, c = None, None
  
@@ -224,13 +223,12 @@ class Span_LSTM_Layer(nn.Module):
         # Process each element in the sequence one at a time
         for t in range(seq_length):
             h, c = self.lstm_cell(seq_emb[:, t, :], dist_emb[:, t, :], time_emb[:, t, :], (h, c))
-            outputs[:, t, :] = h  #[80, 15, 128]
-
+            outputs[:, t, :] = h  
         # Get the last valid output of each sequence
         lengths = mask.sum(dim=1)
         dayOutputs = torch.stack([outputs[i, length-1] for i, length in enumerate(lengths)])
 
-        return outputs, dayOutputs #[80, 15, 128], [80, 128]
+        return outputs, dayOutputs 
 
 
 class LSTM_Layer(nn.Module):
@@ -238,13 +236,13 @@ class LSTM_Layer(nn.Module):
         super(LSTM_Layer, self).__init__()
         self.lstm = nn.LSTM(input_dim, hidden_dim, batch_first=True,dropout=0)
 
-    def forward(self, inputs, mask): #[157, 15, 128], [157, 15]
+    def forward(self, inputs, mask): 
         # Compute the length of each sequence in the batch
-        lengths = mask.sum(dim=1) #[157,]
+        lengths = mask.sum(dim=1) 
 
         # Sort by length to use pack_padded_sequence
-        lengths, sort_idx = lengths.sort(0, descending=True) #[157,], [157,]
-        inputs = inputs[sort_idx] #[157, 15, 128]
+        lengths, sort_idx = lengths.sort(0, descending=True)
+        inputs = inputs[sort_idx]
 
         # Pack the sequence
         packed_inputs = pack_padded_sequence(inputs, lengths.cpu().numpy(), batch_first=True)
@@ -257,13 +255,13 @@ class LSTM_Layer(nn.Module):
 
         # Unsort the outputs
         _, unsort_idx = sort_idx.sort(0)      
-        outputs = outputs[unsort_idx] #[157, 15, 128]
+        outputs = outputs[unsort_idx] 
 
         # Get the last valid output of each sequence
         unsorted_lengths = mask.sum(dim=1)
         dayOutputs = torch.stack([outputs[i, length-1] for i, length in enumerate(unsorted_lengths)])
 
-        return outputs,dayOutputs #[157, 128]
+        return outputs,dayOutputs 
     
 
 
@@ -336,10 +334,10 @@ class DFT_Layer(nn.Module):
             # Add the aggregated embedding to the list
             aggregated_embeddings.append(aggregated_embedding)
 
-        # Convert the list to a tensor with shape [16, 128]
+        # Convert the list to a tensor with shape 
         aggregated_embeddings = torch.stack(aggregated_embeddings)
 
-        return aggregated_embeddings #[16, 128]
+        return aggregated_embeddings 
 
 class wave_Layer(nn.Module):
     def __init__(self, k=5):
@@ -347,14 +345,14 @@ class wave_Layer(nn.Module):
         self.k = k  # 采样次数，默认为5次
 
     def forward(self, seqs, seq_embeddings):
-        # [16, 49], [16, 49, 128]
+  
         aggregated_embeddings = []
 
         # For each sample
         for i in range(seqs.shape[0]):
             seqMask = [seqs[i] != 0]
             real_poi = seqs[i][seqMask]
-            binary_seq = (real_poi == real_poi[-1]).float()  # [46,]
+            binary_seq = (real_poi == real_poi[-1]).float() 
 
             # 存储所有采样的权重
             all_fft_probs = []
@@ -375,7 +373,7 @@ class wave_Layer(nn.Module):
                 fft_prob[-(j + 1):] = 0  # 将末尾 j+1 个位置设置为 0
 
                 # Shift the probabilities to the left by j+1 positions
-                fft_prob = torch.roll(fft_prob, shifts=j + 1)  # [46,] 个概率
+                fft_prob = torch.roll(fft_prob, shifts=j + 1) 
 
                 # 将当前采样的权重添加到列表中
                 all_fft_probs.append(fft_prob)
@@ -391,26 +389,25 @@ class wave_Layer(nn.Module):
             avg_fft_prob = F.pad(avg_fft_prob, (0, padding_size), "constant", 0)
 
             # Use the averaged probabilities to weight the embeddings
-            weighted_embeddings = seq_embeddings[i] * avg_fft_prob.view(-1, 1)  # [49, 128]
+            weighted_embeddings = seq_embeddings[i] * avg_fft_prob.view(-1, 1)  
 
             # Aggregate the embeddings by summing them
-            aggregated_embedding = weighted_embeddings.sum(dim=0)  # [128]
+            aggregated_embedding = weighted_embeddings.sum(dim=0) 
 
             # Add the aggregated embedding to the list
             aggregated_embeddings.append(aggregated_embedding)
 
-        # Convert the list to a tensor with shape [16, 128]
+        # Convert the list to a tensor with shape
         aggregated_embeddings = torch.stack(aggregated_embeddings)
 
-        return aggregated_embeddings  # [16, 128]
-
+        return aggregated_embeddings 
 class wave_Layer_ed(nn.Module):
     def __init__(self):
         super(wave_Layer, self).__init__()
         # Initialize your layers here
 
     def forward(self, seqs,     seq_embeddings):
-        #           [16, 49],   [16, 49, 128]    
+      
         aggregated_embeddings = []
 
         # For each sample
@@ -419,7 +416,7 @@ class wave_Layer_ed(nn.Module):
             seqMask=[seqs[i] != 0]
             real_poi = seqs[i][seqMask]
             # Create a binary sequence indicating whether the last POI was visited at each time point
-            binary_seq = (real_poi == real_poi[-1]).float() #[46,]
+            binary_seq = (real_poi == real_poi[-1]).float()
 
 
             # 2. 进行小波变换
@@ -440,26 +437,26 @@ class wave_Layer_ed(nn.Module):
             fft_prob[-1] = 0
        
             # Shift the probabilities to the left by one position
-            fft_prob = torch.roll(fft_prob, shifts=1)#[46,]个概率
+            fft_prob = torch.roll(fft_prob, shifts=1)
 
             padding_size = seqs.shape[1] - fft_prob.shape[0]  # Calculate the padding size
             fft_prob = F.pad(fft_prob, (0, padding_size), "constant", 0)
 
             # Use the probabilities to weight
             #  the embeddings
-            weighted_embeddings = seq_embeddings[i] * fft_prob.view(-1, 1) #[49, 128]
+            weighted_embeddings = seq_embeddings[i] * fft_prob.view(-1, 1)
             # weighted_embeddings = transformed_seq_embeddings[i]
 
             # Aggregate the embeddings by summing them
-            aggregated_embedding = weighted_embeddings.sum(dim=0) #[128]
+            aggregated_embedding = weighted_embeddings.sum(dim=0)
 
             # Add the aggregated embedding to the list
             aggregated_embeddings.append(aggregated_embedding)
 
-        # Convert the list to a tensor with shape [16, 128]
+        # Convert the list to a tensor with shape
         aggregated_embeddings = torch.stack(aggregated_embeddings)
 
-        return aggregated_embeddings #[16, 128]
+        return aggregated_embeddings
 
 
 
@@ -475,25 +472,25 @@ class Attentional_Aggregation(nn.Module):
 
         for uid in unique_ids:
             # Get the embeddings of the current group
-            group_emb = embeddings[sampleIdOfDay_set == uid] #[6, 128] uid==0时 有6天
+            group_emb = embeddings[sampleIdOfDay_set == uid] 
 
             # Compute the query (the last embedding of the group)
-            query = self.query_layer(group_emb[-1]).unsqueeze(0)  #[1, 128] 最后一天,短期,重要,作为Query
+            query = self.query_layer(group_emb[-1]).unsqueeze(0)  
 
             # Compute the keys
-            keys = self.key_layer(group_emb) #[6, 128] 
+            keys = self.key_layer(group_emb) 
 
             # Compute the attention scores
-            scores = F.softmax(query @ keys.transpose(-2, -1), dim=-1) #[1, 6]
+            scores = F.softmax(query @ keys.transpose(-2, -1), dim=-1) 
 
             # Compute the final embedding of the group
-            group_emb_final = scores @ keys #[1, 128]
+            group_emb_final = scores @ keys 
 
             group_embeddings.append(group_emb_final)
 
-        group_embeddings = torch.cat(group_embeddings, dim=0) #[32, 128]
+        group_embeddings = torch.cat(group_embeddings, dim=0) 
 
-        return group_embeddings #[32, 128]
+        return group_embeddings 
 
 
 

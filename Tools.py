@@ -50,11 +50,11 @@ def fixData(batch,distance_matrix,min_distance,device):
 
 
     seqs=[]
-    for sample_id,sample in enumerate(batch): #处理一个batch32个样本,每个样本有若干天,一个样本是一个long序列
+    for sample_id,sample in enumerate(batch): 
         
         seqsOfSample=[]
-        for id,day in enumerate(sample): #样本中的一天
-            if id==len(sample)-1: #一个样本的最后一天的最后一个checkin当做target
+        for id,day in enumerate(sample): 
+            if id==len(sample)-1: 
                 target.append(day[0][-1])
                 seqInDay_set.append(day[0][:-1])
                 seqsOfSample.append(day[0][:-1])
@@ -83,7 +83,7 @@ def fixData(batch,distance_matrix,min_distance,device):
             time_span_set.append(time_span)
 
             isweekend_set.append(day[4])
-            sampleIdOfDay_set.append(sample_id) #这一天是属于哪个样本的
+            sampleIdOfDay_set.append(sample_id) 
 
             
     sampleIdOfDay_set=torch.tensor(sampleIdOfDay_set)
@@ -100,8 +100,8 @@ def fixData(batch,distance_matrix,min_distance,device):
 
     target=torch.tensor(target)
 
-    return (seqInDay+1).to(device), (seqs+1).to(device), (distance_span_set+1).to(device), (time_span_set+1).to(device), target.to(device),  (cat_set+1).to(device)  ,(hour_set+1).to(device)  ,(user_set+1).to(device)  ,(isweekend_set+1).to(device)  ,mask.to(device)  ,sampleIdOfDay_set.to(device)  #用-1padding的,全部+1,即用0padding
-        #      [80, 15]                   [16, 49]                 [80, 15]
+    return (seqInDay+1).to(device), (seqs+1).to(device), (distance_span_set+1).to(device), (time_span_set+1).to(device), target.to(device),  (cat_set+1).to(device)  ,(hour_set+1).to(device)  ,(user_set+1).to(device)  ,(isweekend_set+1).to(device)  ,mask.to(device)  ,sampleIdOfDay_set.to(device) 
+     
 def fix_negativeData(batch, distance_matrix, min_distance, device):
     seqInDay_set = []
     cat_set = []
@@ -117,7 +117,7 @@ def fix_negativeData(batch, distance_matrix, min_distance, device):
     for sample_id, sample in enumerate(batch): 
         
         seqsOfSample = []
-        for id, day in enumerate(sample):  # 样本中的一天
+        for id, day in enumerate(sample): 
             seqInDay_set.append(day[0])
             seqsOfSample.append(day[0])
             cat_set.append(day[1])
@@ -129,7 +129,7 @@ def fix_negativeData(batch, distance_matrix, min_distance, device):
             time_span_set.append(time_span)
 
             isweekend_set.append(day[4])
-            sampleIdOfDay_set.append(sample_id)  # 这一天是属于哪个样本的
+            sampleIdOfDay_set.append(sample_id)  
 
         seqs.append([item for sublist in seqsOfSample for item in sublist])
 
@@ -144,11 +144,11 @@ def fix_negativeData(batch, distance_matrix, min_distance, device):
     distance_span_set, _ = padSeq(distance_span_set)
     time_span_set, _ = padSeq(time_span_set)
 
-    return (seqInDay + 1).to(device), (seqs + 1).to(device), (distance_span_set + 1).to(device), (time_span_set + 1).to(device), (cat_set + 1).to(device), (hour_set + 1).to(device), (user_set + 1).to(device), (isweekend_set + 1).to(device), mask.to(device), sampleIdOfDay_set.to(device)  # 用-1padding的,全部+1,即用0padding
+    return (seqInDay + 1).to(device), (seqs + 1).to(device), (distance_span_set + 1).to(device), (time_span_set + 1).to(device), (cat_set + 1).to(device), (hour_set + 1).to(device), (user_set + 1).to(device), (isweekend_set + 1).to(device), mask.to(device), sampleIdOfDay_set.to(device) 
 
 
 def transforme_seq(   seqs,     seq_embeddings,   mask , sampleIdOfDay_set):
-    #               [16, 49],   [80, 15, 128],  [80, 15],     [80,]
+
 
     max_length = seqs.shape[1]
 
@@ -159,11 +159,11 @@ def transforme_seq(   seqs,     seq_embeddings,   mask , sampleIdOfDay_set):
     unique_sample_ids = torch.unique(sampleIdOfDay_set)
     for sample_id in unique_sample_ids:
         # Get the sequence embeddings and mask for this sample
-        sample_seq_embeddings = seq_embeddings[sampleIdOfDay_set == sample_id] #[6, 15, 128]
-        sample_mask = mask[sampleIdOfDay_set == sample_id] #[6, 15]
+        sample_seq_embeddings = seq_embeddings[sampleIdOfDay_set == sample_id] 
+        sample_mask = mask[sampleIdOfDay_set == sample_id] 
 
         # Remove the padding POIs and concatenate the remaining POIs
-        sample_seq_embeddings = sample_seq_embeddings[sample_mask.bool()].view(-1, 128) #[46, 128]
+        sample_seq_embeddings = sample_seq_embeddings[sample_mask.bool()].view(-1, 128) 
 
         # If the number of POIs is less than max_length, pad with zero vectors
         if sample_seq_embeddings.shape[0] < max_length:
@@ -173,8 +173,7 @@ def transforme_seq(   seqs,     seq_embeddings,   mask , sampleIdOfDay_set):
         # Add the transformed sequence embeddings to the list
         transformed_seq_embeddings.append(sample_seq_embeddings)
 
-    # Convert the list to a tensor with shape [16, max_length, 128]
-    transformed_seq_embeddings = torch.stack(transformed_seq_embeddings) #[16, 49, 128]
+    transformed_seq_embeddings = torch.stack(transformed_seq_embeddings) 
     return transformed_seq_embeddings
 
 
@@ -189,8 +188,8 @@ def fix_negativeData_ed(batch,distance_matrix, min_distance,device):
 
     sampleIdOfDay_set=[]
 
-    for sample_id,sample in enumerate(batch): #处理一个batch32个样本,每个样本有若干天,一个样本是一个long序列
-        for id,day in enumerate(sample): #样本中的一天
+    for sample_id,sample in enumerate(batch): 
+        for id,day in enumerate(sample): 
             
             seqInDay_set.append(day[0])
             cat_set.append(day[1])
@@ -202,7 +201,7 @@ def fix_negativeData_ed(batch,distance_matrix, min_distance,device):
             time_span_set.append(time_span)
             
             isweekend_set.append(day[4])
-            sampleIdOfDay_set.append(sample_id) #这一天是属于哪个样本的
+            sampleIdOfDay_set.append(sample_id) 
 
             
     sampleIdOfDay_set=torch.tensor(sampleIdOfDay_set)
@@ -225,12 +224,12 @@ def generate_negative_sample_list(train_set, batch, neg_sample_count):
         user_id = sample[0][2][0]
         # Random sample k negative samples from other users' trajectories
         neg_day_sample = random.sample([seq for seq in train_set if seq[0][2][0] != user_id], neg_sample_count)
-        neg_day_samples.extend(neg_day_sample)  # 使用 extend 而不是 append
+        neg_day_samples.extend(neg_day_sample)  
 
     return neg_day_samples
 
 
-def neg_sample_loss_function(last_embedding, neg_embedding):#[32, 128],[32, 128],[32, 128]
+def neg_sample_loss_function(last_embedding, neg_embedding):
         def score(x1, x2):
             return torch.mean(torch.mul(x1, x2))
 
@@ -247,7 +246,7 @@ def neg_sample_loss_function(last_embedding, neg_embedding):#[32, 128],[32, 128]
         neg_loss = single_infoNCE_loss_simple(last_embedding, neg_embedding)
         return neg_loss
 
-def contrast_learning_loss(short_emb, long_emb,  neg_emb,device):#[16, 128],[16, 128],[16, 128]
+def contrast_learning_loss(short_emb, long_emb,  neg_emb,device):
     def score(x1, x2):
         return torch.mean(torch.mul(x1, x2))
     def cos(x1, x2):
@@ -271,8 +270,8 @@ def matrix_mask(adj, epsilon=0, mask_value=-1e16):
 def trainSet_to_seqMatrix(train_set,poi_num):
     seqInDay_set=[]
 
-    for sample_id,sample in enumerate(train_set): #处理一个batch32个样本,每个样本有若干天,一个样本是一个long序列
-        for id,day in enumerate(sample): #样本中的一天
+    for sample_id,sample in enumerate(train_set): 
+        for id,day in enumerate(sample): 
             seqInDay_set.append(day[0])
 
     # Initialize the matrix with zeros
@@ -292,22 +291,22 @@ def trainSet_to_seqMatrix(train_set,poi_num):
     identity = torch.eye(matrix.size(0))
     matrix = matrix + identity  
 
-    return matrix #[1430, 1430]
+    return matrix 
 
 def test_model(args, distance_matrix,min_distance,test_set, model,logger, ks ):
 
-    def calc_recall(labels, preds, k): #([38,1], [38,1430]) 预测已经是排好序的
-        return torch.sum(torch.sum(labels == preds[:, :k], dim=1)) / labels.shape[0] # (38个样例中,有多少个预测中了)/38
+    def calc_recall(labels, preds, k): 
+        return torch.sum(torch.sum(labels == preds[:, :k], dim=1)) / labels.shape[0]
 
-    def calc_ndcg(labels, preds, k):#( [38,1], [38,1430], 5 )
-        exist_pos = (preds[:, :k] == labels).nonzero()[:, 1] + 1    # [8,]满足@k的预测的rank位置,8个样本预测成功  <- ( [38, 5]维度的False/True矩阵 -> True的位置 -> 预测正确结果的位置rank在第几位 )
-        ndcg = 1 / torch.log2(exist_pos + 1) #[8,] 
-        return torch.sum(ndcg) / labels.shape[0] #做个均值
+    def calc_ndcg(labels, preds, k):
+        exist_pos = (preds[:, :k] == labels).nonzero()[:, 1] + 1  
+        ndcg = 1 / torch.log2(exist_pos + 1) 
+        return torch.sum(ndcg) / labels.shape[0] 
 
-    def calc_map(labels, preds, k): # ( [38,1], [38,1430], 5 )
-        exist_pos = (preds[:, :k] == labels).nonzero()[:, 1] + 1  # 同上
-        map = 1 / exist_pos #直接取倒数
-        return torch.sum(map) / labels.shape[0] #求均值
+    def calc_map(labels, preds, k): 
+        exist_pos = (preds[:, :k] == labels).nonzero()[:, 1] + 1 
+        map = 1 / exist_pos 
+        return torch.sum(map) / labels.shape[0] 
     
     test_dataset=TrainDataset(test_set)
     batch_num = len(test_dataset) // args.batch_size
@@ -318,17 +317,17 @@ def test_model(args, distance_matrix,min_distance,test_set, model,logger, ks ):
     for batch_id,batch in tqdm(enumerate(test_dataloader),total=batch_num,ncols=100,leave=False):
         seqInDay,  seqs, distance_span_set, time_span_set,  target,   cat_set,   hour_set,   user_set,  isweekend_set,    mask  ,sampleIdOfDay_set =fixData(batch,distance_matrix,min_distance,args.device)
         prediction,_,_=model(args,seqs,distance_matrix,distance_span_set, time_span_set, seqInDay, hour_set,   user_set,  isweekend_set,  mask, sampleIdOfDay_set) #[38, 1431]
-        target=target.unsqueeze(1) #[38, 1]
+        target=target.unsqueeze(1) 
         targets.append(target)
-        # labels = torch.unsqueeze(torch.stack(labels, dim=0), 1) #[38, 1]
+
         ranking = torch.sort(prediction, descending=True)[1]
         rankings.append(ranking)
 
-    target = torch.cat(targets, dim=0) #[38, 1]
-    ranking = torch.cat(rankings, dim=0) #[38, 1431]
+    target = torch.cat(targets, dim=0)
+    ranking = torch.cat(rankings, dim=0) 
     recalls, NDCGs, MAPs = {}, {}, {}
     logger.info("Test results: ")
-    for k in ks: #[1, 5, 10]
+    for k in ks: 
         recalls[k] = calc_recall(target, ranking, k)
         NDCGs[k] = calc_ndcg(target, ranking, k)
         # MAPs[k] = calc_map(labels, preds, k)

@@ -16,7 +16,7 @@ random_seed = 2021
 
 
 # Split sequence
-def generate_sequence(input_data, min_seq_len, min_seq_num): #(表,3,3)
+def generate_sequence(input_data, min_seq_len, min_seq_num):
     """Split and filter action sequences for each user
 
     Args:
@@ -50,9 +50,9 @@ def generate_sequence(input_data, min_seq_len, min_seq_num): #(表,3,3)
 
     input_data['Local_sg_time'] = pd.to_datetime(input_data['Local_Time_True'])
 
-    for user in input_data['UserId'].unique():  # process sequences for each user  input_data['UserId'].unique().shape:(767,)  一次处理 **一个用户** 的东西
+    for user in input_data['UserId'].unique(): 
 
-        user_visits = input_data[input_data['UserId'] == user] #切片似的选择该用户的checkin
+        user_visits = input_data[input_data['UserId'] == user] 
         user_sequences, user_sequences_meta = [], []
         unique_date_group = user_visits.groupby([user_visits['Local_sg_time'].dt.date]) #按同一天分组 
         for date in unique_date_group.groups:  # process sequences on each day
@@ -105,12 +105,12 @@ def _reIndex_3d_list(input_list):
         """
         return np.where(mapping == old_id)[0].flat[0]
 
-    flat_list = _flatten_3d_list(input_list)  # make 3d list 1d  序列中9304个poi
-    index_map = np.unique(flat_list)  # 有1430个不重复的poi
+    flat_list = _flatten_3d_list(input_list) 
+    index_map = np.unique(flat_list) 
     reIndexed_list = []
-    for user_seq in input_list:  # seq list for each user
+    for user_seq in input_list:  
         reIndexed_user_list = []
-        for seq in user_seq:  # each seq
+        for seq in user_seq: 
             reIndexed_user_list.append([_old_id_to_new(index_map, poi) for poi in seq])
         reIndexed_list.append(reIndexed_user_list)
     reIndexed_list = np.array(reIndexed_list, dtype=object)
@@ -300,7 +300,7 @@ def filter_long_short_term_sequences(total_sequences_meta, min_short_term_len, p
                     user_valid_input_index.append([seq[0] for seq in long_term_seqs] + [seq_index])
                     valid_input_count += 1
         valid_input_index.append(user_valid_input_index)
-        valid_user_count += 1 if len(user_valid_input_index) > 0 else 0 #43个用户符合要求:short要>=5个checkin,且往前7天内,要>=2天有数据
+        valid_user_count += 1 if len(user_valid_input_index) > 0 else 0 
 
     print(f"Filtered {valid_input_count} valid input long+short term sequences for {valid_user_count} users.")
     return valid_input_index
@@ -365,8 +365,8 @@ def split_train_test(input_samples):
         all_testing_samples: 10% of samples for testing
         all_training_validation_samples: 90% of samples for final training after validation
     """
-    random.Random(random_seed).shuffle(input_samples) #随机排序,可复现种子
-    N = len(input_samples) #384个符合要求的样本
+    random.Random(random_seed).shuffle(input_samples) 
+    N = len(input_samples)
     train_valid_boundary = int(0.8 * N)
     valid_test_boundary = int(0.9 * N)
     all_training_samples = input_samples[:train_valid_boundary]
@@ -437,9 +437,9 @@ def generate_data(city):
 
     # POI inputs
     poi_sequences, poi_mapping = generate_POI_sequences(data, visit_sequence_dict)
-    poi_input_data = generate_input_samples(poi_sequences, valid_input_index) #符合要求的长短期seq,一个[]内是一天的seq,384条
+    poi_input_data = generate_input_samples(poi_sequences, valid_input_index) 
     poi_train, poi_valid, poi_test, poi_train_valid = split_train_test(poi_input_data)
-    #307条, 38, 39, 345
+
     train_data.append(poi_train)
     valid_data.append(poi_valid)
     test_data.append(poi_test)
@@ -501,7 +501,7 @@ def generate_data(city):
     valid_data = reshape_data(valid_data)
     test_data = reshape_data(test_data)
     train_valid_data = reshape_data(train_valid_data)
-    # *** 符合长短期要求的样本 --> 一个样本包含多少天 --> 每天的checkin的各种信息
+  
 
     # Meta data
     meta_data["POI"] = poi_mapping
