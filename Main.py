@@ -147,7 +147,6 @@ if __name__ == '__main__':
         con_loss=0.
         for batch_id,batch in tqdm(enumerate(trian_dataloader),total=batch_num,ncols=100,leave=False):
             seqInDay,   seqs,            distance_span_set, time_span_set, target,   cat_set,   hour_set,   user_set,  isweekend_set,    mask  ,sampleIdOfDay_set =fixData(batch,distance_matrix,min_distance,args.device) # "所有"编号都+1了,以便用0 padding
-           #[157, 15], [batchSize,maxLen]   [157, 15]        [157, 15]     [32,]   [157, 15],  [157, 15],   [157,15],    [157,15],     [157, 15]      [157,]        32个样本有157天,轨迹最长的一天里有15个checkin
             
             if args.is_Con: #使用不使用对比学习
                 negative_sample=generate_negative_sample_list(train_set, batch, args.neg_sample_count)

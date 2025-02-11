@@ -83,11 +83,11 @@ class Personal_Geo_GCN(nn.Module):
             sample_emb = GCN_poi_emb[sample,:] #[15, 64]<-[15,]
             sample_emb *= sample_emb.shape[1] ** 0.5 #  *8   #[15, 64]
 
-            seq_GCN_embeddings.append(sample_emb) # 80*[15, 64]
+            seq_GCN_embeddings.append(sample_emb) 
 
-        seq_GCN_embeddings = torch.cat(seq_GCN_embeddings, dim=0)# [80, 15, 64]
+        seq_GCN_embeddings = torch.cat(seq_GCN_embeddings, dim=0)
 
-        return seq_GCN_embeddings# [80, 15, 64]
+        return seq_GCN_embeddings
 
 
 
